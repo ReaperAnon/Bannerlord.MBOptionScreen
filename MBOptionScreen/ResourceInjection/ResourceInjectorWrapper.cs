@@ -1,33 +1,31 @@
-﻿using MBOptionScreen.Interfaces;
+﻿using HarmonyLib;
 
 using System.Reflection;
 using System.Xml;
 
-using TaleWorlds.GauntletUI.PrefabSystem;
-
 namespace MBOptionScreen.ResourceInjection
 {
-    internal class ResourceInjectorWrapper : IResourceInjector
+    internal sealed class ResourceInjectorWrapper : BaseResourceInjector, IWrapper
     {
         private readonly object _object;
         private MethodInfo InjectBrushMethod { get; }
         private MethodInfo InjectPrefabMethod { get; }
-        private MethodInfo RequestMovieMethod { get; }
+        public bool IsCorrect { get; }
 
         public ResourceInjectorWrapper(object @object)
         {
             _object = @object;
             var type = @object.GetType();
-            InjectBrushMethod = type.GetMethod("InjectBrush", BindingFlags.Instance | BindingFlags.Public);
-            InjectPrefabMethod = type.GetMethod("InjectPrefab", BindingFlags.Instance | BindingFlags.Public);
-            RequestMovieMethod = type.GetMethod("RequestMovie", BindingFlags.Instance | BindingFlags.Public);
+
+            InjectBrushMethod = AccessTools.Method(type, "InjectBrush");
+            InjectPrefabMethod = AccessTools.Method(type, "InjectPrefab");
+
+            IsCorrect = InjectBrushMethod != null && InjectPrefabMethod != null;
         }
 
-        public void InjectBrush(XmlDocument xmlDocument) =>
+        public override void InjectBrush(XmlDocument xmlDocument) =>
             InjectBrushMethod.Invoke(_object, new object[] { xmlDocument });
-        public void InjectPrefab(string prefabName, XmlDocument xmlDocument) =>
+        public override void InjectPrefab(string prefabName, XmlDocument xmlDocument) =>
             InjectPrefabMethod.Invoke(_object, new object[] { prefabName, xmlDocument });
-        public WidgetPrefab? RequestMovie(string movie) =>
-            RequestMovieMethod.Invoke(_object, new object[] { movie }) as WidgetPrefab;
     }
 }
